@@ -22,6 +22,8 @@ func TestWeaselABGRColorConversion(t *testing.T) {
 }
 
 func TestParseWeaselAppearanceYAML(t *testing.T) {
+	t.Skip("legacy backend appearance skin import is stale and inaccessible in TypeDuck v1")
+
 	data := []byte(`
 style:
   color_scheme: aqua
@@ -85,6 +87,8 @@ preset_color_schemes:
 }
 
 func TestParseInstalledWeaselYAML(t *testing.T) {
+	t.Skip("legacy backend appearance skin import is stale and inaccessible in TypeDuck v1")
+
 	const path = `D:\Program Files\Rime\weasel-0.17.4\data\weasel.yaml`
 	if _, err := os.Stat(path); err != nil {
 		t.Skipf("installed weasel.yaml not found: %v", err)
@@ -140,6 +144,8 @@ func TestParseInstalledWeaselYAML(t *testing.T) {
 }
 
 func TestParseWeaselCustomPatchYAML(t *testing.T) {
+	t.Skip("legacy backend appearance skin import is stale and inaccessible in TypeDuck v1")
+
 	data := []byte(`
 patch:
   style/color_scheme: google
@@ -166,6 +172,8 @@ patch:
 }
 
 func TestImportAppearanceSkinFromMoqiJSON(t *testing.T) {
+	t.Skip("legacy backend appearance skin import is stale and inaccessible in TypeDuck v1")
+
 	resetSharedAppearanceConfigForTest()
 	ime := newTestIME()
 	dir := t.TempDir()
@@ -197,6 +205,8 @@ func TestImportAppearanceSkinFromMoqiJSON(t *testing.T) {
 }
 
 func TestAppearanceMenuContainsImportSkinItem(t *testing.T) {
+	t.Skip("legacy backend appearance import menu is stale and inaccessible in TypeDuck v1")
+
 	ime := newTestIME()
 	items := ime.buildMenu()
 	appearanceMenu := findMenuByText(items, "外观(&A)")

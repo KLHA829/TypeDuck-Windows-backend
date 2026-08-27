@@ -1,7 +1,6 @@
 package rime
 
 import (
-	_ "embed"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -10,9 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 )
-
-//go:embed appearance_themes.json
-var embeddedBuiltinAppearanceThemes []byte
 
 const (
 	appearanceThemesFileName = "appearance_themes.json"
@@ -85,23 +81,10 @@ func builtinAppearanceThemesPath() string {
 }
 
 func loadBuiltinThemes() ([]ThemeDefinition, error) {
-	if path := builtinAppearanceThemesPath(); path != "" {
-		themes, err := loadAppearanceThemesFile(path)
-		if err != nil {
-			return nil, err
-		}
-		if len(themes) > 0 {
-			return themes, nil
-		}
-	}
-	if len(embeddedBuiltinAppearanceThemes) == 0 {
-		return nil, nil
-	}
-	var file appearanceThemesFile
-	if err := json.Unmarshal(embeddedBuiltinAppearanceThemes, &file); err != nil {
-		return nil, err
-	}
-	return file.Themes, nil
+	// Legacy backend appearance themes are stale in TypeDuck v1. The Windows
+	// frontend owns appearance config, so the backend must not read or embed
+	// appearance_themes.json.
+	return nil, nil
 }
 
 func userAppearanceThemesPath() string {
@@ -196,19 +179,8 @@ func normalizeThemeDefinition(theme ThemeDefinition) ThemeDefinition {
 }
 
 func reloadThemeRegistry() error {
-	builtinThemes, err := loadBuiltinThemes()
-	if err != nil {
-		return err
-	}
-	userThemes, err := loadAppearanceThemesFile(userAppearanceThemesPath())
-	if err != nil {
-		return err
-	}
-	list := mergeThemeDefinitions(builtinThemes, userThemes)
-	cache := make(map[string]ThemeDefinition, len(list))
-	for _, theme := range list {
-		cache[theme.ID] = theme
-	}
+	list := []ThemeDefinition{}
+	cache := map[string]ThemeDefinition{}
 	themeRegistryMu.Lock()
 	themeRegistryCache = cache
 	themeRegistryList = list

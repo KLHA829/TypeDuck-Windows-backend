@@ -48,7 +48,6 @@ TypeDuckRuntime/
 └── input_methods/
     └── rime/
         ├── rime.dll
-        ├── appearance_themes.json
         └── data/
 ```
 
@@ -99,7 +98,6 @@ The script:
 - Builds `server.exe` for Windows amd64.
 - Copies and prunes `input_methods/rime`.
 - Copies TypeDuck Rime shared data into `input_methods/rime/data`.
-- Copies `appearance_themes.json`.
 - Keeps the runtime layout expected by `TypeDuck-Windows`.
 
 For local compiler-only checks:

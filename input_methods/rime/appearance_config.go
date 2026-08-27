@@ -444,7 +444,6 @@ func (ime *IME) sendAsyncAppearanceUpdate(notification *imecore.TrayNotification
 		return
 	}
 	resp := imecore.NewResponse(0, true)
-	resp.CustomizeUI = ime.customizeUIMap()
 	ime.fillResponseFromCurrentState(resp)
 	if notification != nil {
 		resp.TrayNotification = notification
@@ -476,23 +475,9 @@ func (ime *IME) inlinePreeditEnabled() bool {
 }
 
 func (ime *IME) customizeUIMap() map[string]interface{} {
-	return map[string]interface{}{
-		"candFontName":              ime.style.FontFace,
-		"candFontSize":              ime.style.FontPoint,
-		"candCommentFontName":       ime.style.CandidateCommentFontFace,
-		"candCommentFontSize":       ime.style.CandidateCommentFontPoint,
-		"candPerRow":                ime.effectiveCandidatePerRow(),
-		"candSpacing":               ime.style.CandidateSpacing,
-		"candUseCursor":             ime.style.CandidateUseCursor,
-		"candBackgroundColor":       normalizeColor(ime.style.CandidateBackgroundColor),
-		"candHighlightColor":        normalizeColor(ime.style.CandidateHighlightColor),
-		"candTextColor":             normalizeColor(ime.style.CandidateTextColor),
-		"candHighlightTextColor":    normalizeColor(ime.style.CandidateHighlightTextColor),
-		"candCommentColor":          normalizeColor(ime.style.CandidateCommentColor),
-		"candCommentHighlightColor": normalizeColor(ime.style.CandidateCommentHighlightColor),
-		"inlinePreedit":             ime.inlinePreeditEnabled(),
-		"semicolonSelectSecond":     ime.semicolonSelectSecond,
-	}
+	// Frontend rendering appearance is owned by TypeDuck-Windows in TypeDuck v1.
+	// Keep the legacy CustomizeUI path stale so old clients do not regain it.
+	return nil
 }
 
 func (ime *IME) isHorizontalCandidateLayout() bool {
@@ -654,146 +639,6 @@ func (ime *IME) redeployTypeDuckSettings(req *imecore.Request, resp *imecore.Res
 }
 
 func (ime *IME) applyAppearanceCommand(commandID int) bool {
-	if ime.handleThemeCommand(commandID) {
-		ime.saveAppearancePrefsWithReason(fmt.Sprintf("applyAppearanceCommand:commandID=%d", commandID))
-		return true
-	}
-	switch commandID {
-	case ID_APPEARANCE_INLINE_PREEDIT:
-		if ime.inlinePreeditEnabled() {
-			ime.style.InlinePreedit = "external"
-		} else {
-			ime.style.InlinePreedit = "composition"
-		}
-	case ID_APPEARANCE_LAYOUT_VERTICAL:
-		ime.style.CandidatePerRow = 1
-	case ID_APPEARANCE_LAYOUT_HORIZONTAL:
-		ime.style.CandidatePerRow = ime.horizontalCandidatePerRow()
-	case ID_APPEARANCE_PER_ROW_3:
-		ime.style.CandidatePerRow = 3
-	case ID_APPEARANCE_PER_ROW_5:
-		ime.style.CandidatePerRow = 5
-	case ID_APPEARANCE_PER_ROW_7:
-		ime.style.CandidatePerRow = 7
-	case ID_APPEARANCE_PER_ROW_9:
-		ime.style.CandidatePerRow = 9
-	case ID_APPEARANCE_SPACING_0:
-		ime.style.CandidateSpacing = 0
-	case ID_APPEARANCE_SPACING_10:
-		ime.style.CandidateSpacing = 10
-	case ID_APPEARANCE_SPACING_20:
-		ime.style.CandidateSpacing = 20
-	case ID_APPEARANCE_SPACING_30:
-		ime.style.CandidateSpacing = 30
-	case ID_APPEARANCE_SPACING_40:
-		ime.style.CandidateSpacing = 40
-	case ID_APPEARANCE_SPACING_50:
-		ime.style.CandidateSpacing = 50
-	case ID_APPEARANCE_CAND_COUNT_3:
-		ime.style.CandidateCount = 3
-	case ID_APPEARANCE_CAND_COUNT_5:
-		ime.style.CandidateCount = 5
-	case ID_APPEARANCE_CAND_COUNT_7:
-		ime.style.CandidateCount = 7
-	case ID_APPEARANCE_CAND_COUNT_9:
-		ime.style.CandidateCount = 9
-	case ID_APPEARANCE_FONT_14:
-		ime.style.FontPoint = 14
-	case ID_APPEARANCE_FONT_16:
-		ime.style.FontPoint = 16
-	case ID_APPEARANCE_FONT_18:
-		ime.style.FontPoint = 18
-	case ID_APPEARANCE_FONT_20:
-		ime.style.FontPoint = 20
-	case ID_APPEARANCE_FONT_22:
-		ime.style.FontPoint = 22
-	case ID_APPEARANCE_FONT_24:
-		ime.style.FontPoint = 24
-	case ID_APPEARANCE_FONT_26:
-		ime.style.FontPoint = 26
-	case ID_APPEARANCE_FONT_28:
-		ime.style.FontPoint = 28
-	case ID_APPEARANCE_FONT_30:
-		ime.style.FontPoint = 30
-	case ID_APPEARANCE_FONT_FAMILY_SEGOE_UI:
-		ime.style.FontFace = "Segoe UI"
-	case ID_APPEARANCE_FONT_FAMILY_YAHEI_UI:
-		ime.style.FontFace = "Microsoft YaHei UI"
-	case ID_APPEARANCE_FONT_FAMILY_DENGXIAN:
-		ime.style.FontFace = "DengXian"
-	case ID_APPEARANCE_FONT_FAMILY_SIMSUN:
-		ime.style.FontFace = "SimSun"
-	case ID_APPEARANCE_COMMENT_FONT_14:
-		ime.style.CandidateCommentFontPoint = 14
-	case ID_APPEARANCE_COMMENT_FONT_16:
-		ime.style.CandidateCommentFontPoint = 16
-	case ID_APPEARANCE_COMMENT_FONT_18:
-		ime.style.CandidateCommentFontPoint = 18
-	case ID_APPEARANCE_COMMENT_FONT_20:
-		ime.style.CandidateCommentFontPoint = 20
-	case ID_APPEARANCE_COMMENT_FONT_22:
-		ime.style.CandidateCommentFontPoint = 22
-	case ID_APPEARANCE_COMMENT_FONT_24:
-		ime.style.CandidateCommentFontPoint = 24
-	case ID_APPEARANCE_COMMENT_FONT_26:
-		ime.style.CandidateCommentFontPoint = 26
-	case ID_APPEARANCE_COMMENT_FONT_28:
-		ime.style.CandidateCommentFontPoint = 28
-	case ID_APPEARANCE_COMMENT_FONT_30:
-		ime.style.CandidateCommentFontPoint = 30
-	case ID_APPEARANCE_COMMENT_FONT_FAMILY_CONSOLAS:
-		ime.style.CandidateCommentFontFace = "Consolas"
-	case ID_APPEARANCE_COMMENT_FONT_FAMILY_YAHEI_UI:
-		ime.style.CandidateCommentFontFace = "Microsoft YaHei UI"
-	case ID_APPEARANCE_COMMENT_FONT_FAMILY_DENGXIAN:
-		ime.style.CandidateCommentFontFace = "DengXian"
-	case ID_APPEARANCE_COMMENT_FONT_FAMILY_SIMSUN:
-		ime.style.CandidateCommentFontFace = "SimSun"
-	case ID_APPEARANCE_BG_WHITE:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateBackgroundColor = "#ffffff"
-	case ID_APPEARANCE_BG_WARM:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateBackgroundColor = "#fff7e8"
-	case ID_APPEARANCE_BG_BLUE:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateBackgroundColor = "#f3f8ff"
-	case ID_APPEARANCE_HL_BLUE:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateHighlightColor = "#c6ddf9"
-	case ID_APPEARANCE_HL_GRAY:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateHighlightColor = "#e5e7eb"
-	case ID_APPEARANCE_HL_GREEN:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateHighlightColor = "#d9f2e6"
-	case ID_APPEARANCE_TEXT_BLACK:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateTextColor = "#000000"
-		ime.style.CandidateCommentColor = ime.style.CandidateTextColor
-	case ID_APPEARANCE_TEXT_DARKGRAY:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateTextColor = "#333333"
-		ime.style.CandidateCommentColor = ime.style.CandidateTextColor
-	case ID_APPEARANCE_TEXT_BLUE:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateTextColor = "#1d4ed8"
-		ime.style.CandidateCommentColor = ime.style.CandidateTextColor
-	case ID_APPEARANCE_HLTEXT_BLACK:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateHighlightTextColor = "#000000"
-		ime.style.CandidateCommentHighlightColor = ime.style.CandidateHighlightTextColor
-	case ID_APPEARANCE_HLTEXT_WHITE:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateHighlightTextColor = "#ffffff"
-		ime.style.CandidateCommentHighlightColor = ime.style.CandidateHighlightTextColor
-	case ID_APPEARANCE_HLTEXT_BLUE:
-		ime.style.CandidateTheme = "custom"
-		ime.style.CandidateHighlightTextColor = "#1d4ed8"
-		ime.style.CandidateCommentHighlightColor = ime.style.CandidateHighlightTextColor
-	default:
-		return false
-	}
-	ime.saveAppearancePrefsWithReason(fmt.Sprintf("applyAppearanceCommand:commandID=%d", commandID))
-	return true
+	// Legacy backend appearance commands are intentionally unreachable in TypeDuck v1.
+	return false
 }

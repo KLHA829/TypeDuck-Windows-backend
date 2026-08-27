@@ -301,7 +301,7 @@ try {
 
     $packageInputMethodsDir = Join-Path $PackageDir "input_methods"
     Ensure-Directory -Path (Join-Path $packageInputMethodsDir "rime")
-    $runtimeFiles = @("appearance_themes.json", "rime.dll")
+    $runtimeFiles = @("rime.dll")
     foreach ($name in $runtimeFiles) {
         $sourcePath = Join-Path $RimeDir $name
         $destinationPath = Join-Path $PackageRimeDir $name
@@ -341,5 +341,5 @@ Write-Host ""
 Write-Host "Notes:"
 Write-Host "1. The Windows launcher owns the fixed TypeDuck runtime bridge."
 Write-Host "2. Ensure TypeDuckRuntime\server.exe exists before installer staging."
-Write-Host "3. Ensure TypeDuckRuntime\input_methods\rime contains rime.dll and appearance_themes.json."
+Write-Host "3. Ensure TypeDuckRuntime\input_methods\rime contains rime.dll."
 Write-Host "4. Start or restart TypeDuckLauncher.exe after install."

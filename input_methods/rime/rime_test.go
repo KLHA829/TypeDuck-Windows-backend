@@ -1696,6 +1696,8 @@ func TestOnCommandOpenAutoPairSymbolsCreatesFileAndOpensIt(t *testing.T) {
 }
 
 func TestCustomizeUIMapLoadsAutoPairRulesFromFile(t *testing.T) {
+	t.Skip("legacy CustomizeUI auto-pair payload is stale and inaccessible in TypeDuck v1")
+
 	appData := t.TempDir()
 	t.Setenv("APPDATA", appData)
 	resetAutoPairSymbolsStateForTest()
@@ -1727,6 +1729,8 @@ func TestCustomizeUIMapLoadsAutoPairRulesFromFile(t *testing.T) {
 }
 
 func TestHandleRequestRefreshesCustomizeUIWhenAutoPairRulesFileChanges(t *testing.T) {
+	t.Skip("legacy CustomizeUI auto-pair refresh is stale and inaccessible in TypeDuck v1")
+
 	appData := t.TempDir()
 	t.Setenv("APPDATA", appData)
 	resetAutoPairSymbolsStateForTest()
@@ -2120,6 +2124,8 @@ func TestOnCommandUpdateConfigRunsGitPullAsyncAndNotifies(t *testing.T) {
 }
 
 func TestApplyAppearanceCommandChangesCandidateLayout(t *testing.T) {
+	t.Skip("legacy backend appearance commands are stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 	ime.style.CandidatePerRow = 1
 
@@ -2153,6 +2159,8 @@ func TestApplyAppearanceCommandChangesCandidateLayout(t *testing.T) {
 }
 
 func TestApplyAppearanceCommandChangesCandidateSpacing(t *testing.T) {
+	t.Skip("legacy backend appearance commands are stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 
 	if !ime.applyAppearanceCommand(ID_APPEARANCE_SPACING_0) {
@@ -2185,37 +2193,11 @@ func TestEffectiveCandidatePerRowIsCappedByCandidateCount(t *testing.T) {
 	if got := ime.effectiveCandidatePerRow(); got != 3 {
 		t.Fatalf("expected effective per-row capped to 3, got %d", got)
 	}
-
-	customizeUI := ime.customizeUIMap()
-	candPerRow, ok := customizeUI["candPerRow"].(int)
-	if !ok {
-		t.Fatalf("expected candPerRow int, got %#v", customizeUI["candPerRow"])
-	}
-	if candPerRow != 3 {
-		t.Fatalf("expected customizeUI candPerRow capped to 3, got %d", candPerRow)
-	}
-	if got, ok := customizeUI["candSpacing"].(int); !ok || got != ime.style.CandidateSpacing {
-		t.Fatalf("expected customizeUI candSpacing %d, got %#v", ime.style.CandidateSpacing, customizeUI["candSpacing"])
-	}
-	if got, ok := customizeUI["candCommentColor"].(string); !ok || got != ime.style.CandidateCommentColor {
-		t.Fatalf("expected customizeUI candCommentColor %q, got %#v", ime.style.CandidateCommentColor, customizeUI["candCommentColor"])
-	}
-	if got, ok := customizeUI["candCommentHighlightColor"].(string); !ok || got != ime.style.CandidateCommentHighlightColor {
-		t.Fatalf("expected customizeUI candCommentHighlightColor %q, got %#v", ime.style.CandidateCommentHighlightColor, customizeUI["candCommentHighlightColor"])
-	}
-	rules, ok := customizeUI["autoPairRules"].([]imecore.AutoPairRule)
-	if !ok {
-		t.Fatalf("expected autoPairRules slice, got %#v", customizeUI["autoPairRules"])
-	}
-	if len(rules) == 0 {
-		t.Fatal("expected autoPairRules to be populated")
-	}
-	if rules[0].Open != "“" || rules[0].Close != "”" {
-		t.Fatalf("unexpected first autoPairRule: %#v", rules[0])
-	}
 }
 
 func TestOnCommandAppearanceRefreshesCurrentCandidates(t *testing.T) {
+	t.Skip("legacy backend appearance commands are stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 	backend := ime.backend.(*testBackend)
 	backend.composition = "ni"
@@ -2241,6 +2223,8 @@ func TestOnCommandAppearanceRefreshesCurrentCandidates(t *testing.T) {
 }
 
 func TestOnCommandCandidateCountWritesConfigAndDeploysConfigFile(t *testing.T) {
+	t.Skip("legacy backend candidate-count appearance command is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	oldDeployConfigFileFunc := deployConfigFileFunc
 	oldStartMaintenanceFunc := startMaintenanceFunc
@@ -2315,6 +2299,8 @@ func TestOnCommandCandidateCountWritesConfigAndDeploysConfigFile(t *testing.T) {
 }
 
 func TestOnCommandCandidateCountUsesRuntimePageSizeWhenAvailable(t *testing.T) {
+	t.Skip("legacy backend candidate-count appearance command is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	oldDeployConfigFileFunc := deployConfigFileFunc
 	oldStartMaintenanceFunc := startMaintenanceFunc
@@ -2547,6 +2533,8 @@ func TestFillResponseIncludesTypeDuckCandidatePageMetadata(t *testing.T) {
 }
 
 func TestBuildMenuIncludesCandidateLayoutSubmenus(t *testing.T) {
+	t.Skip("legacy backend appearance menu is stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 	ime.style.CandidatePerRow = 5
 	ime.style.CandidateCommentFontPoint = 18
@@ -2629,6 +2617,8 @@ func TestBuildMenuIncludesCandidateLayoutSubmenus(t *testing.T) {
 }
 
 func TestBuildMenuCapsPerRowHighlightByCandidateCount(t *testing.T) {
+	t.Skip("legacy backend appearance menu is stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 	ime.style.CandidatePerRow = 9
 	ime.style.CandidateCount = 3
@@ -2677,6 +2667,8 @@ func TestBuildMenuCapsPerRowHighlightByCandidateCount(t *testing.T) {
 }
 
 func TestBuildMenuDisablesPerRowSubmenuInVerticalLayout(t *testing.T) {
+	t.Skip("legacy backend appearance menu is stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 	ime.style.CandidatePerRow = 1
 
@@ -2725,6 +2717,8 @@ func TestBuildMenuDisablesPerRowSubmenuInVerticalLayout(t *testing.T) {
 }
 
 func TestBuildMenuIncludesCandidateCountSubmenu(t *testing.T) {
+	t.Skip("legacy backend appearance menu is stale and inaccessible in TypeDuck v1")
+
 	ime := newIsolatedTestIME(t)
 	ime.style.CandidateCount = 7
 
@@ -2801,27 +2795,20 @@ func TestBuildMenuIncludesInputSettingsSubmenu(t *testing.T) {
 	}
 
 	submenu, ok := inputSettingsMenu["submenu"].([]map[string]interface{})
-	if !ok || len(submenu) != 3 {
-		t.Fatalf("expected three input settings items, got %#v", inputSettingsMenu["submenu"])
+	if !ok || len(submenu) != 1 {
+		t.Fatalf("expected one input settings item, got %#v", inputSettingsMenu["submenu"])
 	}
-	if text, _ := submenu[0]["text"].(string); text != "自动插入成对符号" {
+	if text, _ := submenu[0]["text"].(string); text != "分號鍵次選 / Semicolon Selects Second" {
 		t.Fatalf("unexpected input settings item: %#v", submenu[0])
 	}
 	if checked, _ := submenu[0]["checked"].(bool); checked {
-		t.Fatalf("expected auto pair quotes disabled by default, got %#v", submenu[0])
-	}
-	if text, _ := submenu[1]["text"].(string); text != "成对符号" {
-		t.Fatalf("unexpected second input settings item: %#v", submenu[1])
-	}
-	if text, _ := submenu[2]["text"].(string); text != "分号键次选" {
-		t.Fatalf("unexpected third input settings item: %#v", submenu[2])
-	}
-	if checked, _ := submenu[2]["checked"].(bool); checked {
-		t.Fatalf("expected semicolon select second disabled by default, got %#v", submenu[2])
+		t.Fatalf("expected semicolon select second disabled by default, got %#v", submenu[0])
 	}
 }
 
 func TestOnCommandTogglesAutoPairQuotes(t *testing.T) {
+	t.Skip("legacy auto-pair backend command is stale and inaccessible in TypeDuck v1")
+
 	appData := t.TempDir()
 	t.Setenv("APPDATA", appData)
 	resetSharedAppearanceConfigForTest()
@@ -2873,21 +2860,13 @@ func TestOnCommandTogglesSemicolonSelectSecond(t *testing.T) {
 	if !ime.semicolonSelectSecond {
 		t.Fatal("expected semicolon select second enabled after toggle")
 	}
-	if got, ok := resp.CustomizeUI["semicolonSelectSecond"].(bool); !ok || !got {
-		t.Fatalf("expected customizeUI semicolonSelectSecond true, got %#v", resp.CustomizeUI["semicolonSelectSecond"])
+	if len(resp.CustomizeUI) != 0 {
+		t.Fatalf("expected no stale CustomizeUI payload, got %#v", resp.CustomizeUI)
 	}
 
 	configPath := filepath.Join(appData, APP, appearanceConfigFileName)
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("expected appearance config written to disk: %v", err)
-	}
-	var persisted map[string]any
-	if err := json.Unmarshal(data, &persisted); err != nil {
-		t.Fatalf("expected valid appearance config json: %v", err)
-	}
-	if got := persisted["semicolon_select_second"]; got != true {
-		t.Fatalf("expected persisted semicolon_select_second true, got %#v", got)
+	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+		t.Fatalf("expected no legacy appearance config written to disk, stat err=%v", err)
 	}
 }
 
@@ -3657,6 +3636,8 @@ func TestHandleRequestOnDeactivateReturnsHandled(t *testing.T) {
 }
 
 func TestHandleRequestSyncsAppearanceAcrossInstances(t *testing.T) {
+	t.Skip("legacy backend appearance sync is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	resetSharedAppearanceConfigForTest()
 
@@ -4068,6 +4049,8 @@ func TestCreateSessionAppliesSharedInputStateAfterSharedConfigUpdateWithExisting
 }
 
 func TestLoadAppearancePrefsKeepsPresetThemeAfterPersist(t *testing.T) {
+	t.Skip("legacy backend appearance persistence is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	resetSharedAppearanceConfigForTest()
 
@@ -4089,6 +4072,8 @@ func TestLoadAppearancePrefsKeepsPresetThemeAfterPersist(t *testing.T) {
 }
 
 func TestAppearanceSettingsPersistToDisk(t *testing.T) {
+	t.Skip("legacy backend appearance persistence is stale and inaccessible in TypeDuck v1")
+
 	appData := t.TempDir()
 	t.Setenv("APPDATA", appData)
 	resetSharedAppearanceConfigForTest()

@@ -32,6 +32,8 @@ func themeCommandForTheme(t *testing.T, themeID string) int {
 }
 
 func TestBuiltinThemeRegistryLoads(t *testing.T) {
+	t.Skip("legacy backend appearance themes are stale and not loaded in TypeDuck v1")
+
 	ensureTestThemeRegistry(t)
 	themes := listThemes()
 	if len(themes) != 2 {
@@ -61,6 +63,8 @@ func TestPaletteAppearanceConfigNameAvoidsAbstractTerminology(t *testing.T) {
 }
 
 func TestAppearanceThemeMenuItems(t *testing.T) {
+	t.Skip("legacy backend appearance theme menu is stale and inaccessible in TypeDuck v1")
+
 	ensureTestThemeRegistry(t)
 	ime := newTestIME()
 	items := ime.themeMenuItems()
@@ -117,6 +121,8 @@ preset_color_schemes:
 }
 
 func TestImportWeaselSkinRegistersThemes(t *testing.T) {
+	t.Skip("legacy backend appearance skin import is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	resetSharedAppearanceConfigForTest()
 	resetThemeRegistryForTest()
@@ -170,6 +176,8 @@ preset_color_schemes:
 }
 
 func TestUpsertImportedThemesPreservesExistingFromOtherFile(t *testing.T) {
+	t.Skip("legacy backend appearance theme import is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	resetThemeRegistryForTest()
 
@@ -212,6 +220,8 @@ func TestUpsertImportedThemesPreservesExistingFromOtherFile(t *testing.T) {
 }
 
 func TestUpsertImportedThemesRefreshesSameSourceFile(t *testing.T) {
+	t.Skip("legacy backend appearance theme import is stale and inaccessible in TypeDuck v1")
+
 	t.Setenv("APPDATA", t.TempDir())
 	resetThemeRegistryForTest()
 
@@ -242,6 +252,8 @@ func TestUpsertImportedThemesRefreshesSameSourceFile(t *testing.T) {
 }
 
 func TestAppearanceMenuThemeSubmenuDynamic(t *testing.T) {
+	t.Skip("legacy backend appearance menu is stale and inaccessible in TypeDuck v1")
+
 	ensureTestThemeRegistry(t)
 	ime := newTestIME()
 	items := ime.buildMenu()
