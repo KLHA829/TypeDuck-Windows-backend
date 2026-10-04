@@ -140,24 +140,32 @@ function Remove-PackagePath {
 function Write-ServerVersionInfo {
     param(
         [string] $VersionInfoPath,
-        [string] $IconPath
+        [string] $IconPath,
+        [string] $Version
     )
 
+    $versionParts = @($Version.Split(".") | ForEach-Object { [int] $_ })
+    if ($versionParts.Count -ne 3) {
+        throw "version.txt must contain a semantic version with three numeric parts, such as 2.0.0."
+    }
+
     $fileDescription = "TypeDuck Runtime Engine"
-    $productName = "TypeDuck Windows IME"
+    $productName = "TypeDuck 粵語輸入法 / TypeDuck Cantonese IME"
+    $companyName = "香港教育大學 The Education University of Hong Kong"
+    $copyright = "© 香港教育大學 The Education University of Hong Kong"
 
     $versionInfo = [ordered]@{
         FixedFileInfo  = [ordered]@{
             FileVersion    = [ordered]@{
-                Major = 1
-                Minor = 0
-                Patch = 0
+                Major = $versionParts[0]
+                Minor = $versionParts[1]
+                Patch = $versionParts[2]
                 Build = 0
             }
             ProductVersion = [ordered]@{
-                Major = 1
-                Minor = 0
-                Patch = 0
+                Major = $versionParts[0]
+                Minor = $versionParts[1]
+                Patch = $versionParts[2]
                 Build = 0
             }
             FileFlagsMask  = "3f"
@@ -167,22 +175,18 @@ function Write-ServerVersionInfo {
             FileSubType    = "00"
         }
         StringFileInfo = [ordered]@{
-            Comments         = ""
-            CompanyName      = ""
+            CompanyName      = $companyName
             FileDescription  = $fileDescription
-            FileVersion      = "1.0.0.0"
+            FileVersion      = $Version
             InternalName     = "server.exe"
-            LegalCopyright   = ""
-            LegalTrademarks  = ""
+            LegalCopyright   = $copyright
             OriginalFilename = "server.exe"
-            PrivateBuild     = ""
             ProductName      = $productName
-            ProductVersion   = "1.0.0.0"
-            SpecialBuild     = ""
+            ProductVersion   = $Version
         }
         VarFileInfo    = [ordered]@{
             Translation = [ordered]@{
-                LangID    = "0804"
+                LangID    = "0C04"
                 CharsetID = "04B0"
             }
         }
@@ -198,9 +202,28 @@ function Write-ServerVersionInfo {
     )
 }
 
+function Read-TypeDuckVersion {
+    param(
+        [string] $RepoRoot
+    )
+
+    $versionPath = Join-Path $RepoRoot "version.txt"
+    if (-not (Test-Path -LiteralPath $versionPath -PathType Leaf)) {
+        throw "Missing version file: `"$versionPath`""
+    }
+
+    $version = (Get-Content -LiteralPath $versionPath -Raw).Trim()
+    if ($version -notmatch '^\d+\.\d+\.\d+$') {
+        throw "version.txt must contain a semantic version with three numeric parts, such as 2.0.0."
+    }
+
+    return $version
+}
+
 $scriptRepoRoot = Join-Path $PSScriptRoot ".."
 if (-not $RepoRoot) { $RepoRoot = $scriptRepoRoot }
 $RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
+$TypeDuckVersion = Read-TypeDuckVersion -RepoRoot $RepoRoot
 
 if (-not $BuildRoot) { $BuildRoot = Join-Path $PSScriptRoot "build" }
 if (-not $PackageDir) { $PackageDir = Join-Path $BuildRoot "TypeDuckRuntime" }
@@ -279,7 +302,7 @@ try {
             throw "Missing server icon: `"$ServerIcon`""
         }
 
-        Write-ServerVersionInfo -VersionInfoPath $ServerVersionInfo -IconPath $ServerIcon
+        Write-ServerVersionInfo -VersionInfoPath $ServerVersionInfo -IconPath $ServerIcon -Version $TypeDuckVersion
         Remove-IfExists -Path $ServerResource
         $null = Invoke-External -FilePath $goversioninfo -ArgumentList @("-64", "-o", $ServerResource, $ServerVersionInfo)
         $null = Invoke-External -FilePath "go" -ArgumentList @("build", "-ldflags", "-s -w", "-o", $ServerExe, ".")
