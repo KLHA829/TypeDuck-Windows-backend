@@ -168,17 +168,3 @@ func saveCurrentSchemeSetName(name string) bool {
 	}
 	return os.WriteFile(schemeSetConfigPath(), data, 0o644) == nil
 }
-
-func schemeSetMenuItems() []map[string]interface{} {
-	names := availableSchemeSets()
-	current := currentSchemeSetName()
-	items := make([]map[string]interface{}, 0, len(names))
-	for i, name := range names {
-		items = append(items, map[string]interface{}{
-			"id":      schemeSetCommandID(i),
-			"text":    name,
-			"checked": name == current,
-		})
-	}
-	return items
-}

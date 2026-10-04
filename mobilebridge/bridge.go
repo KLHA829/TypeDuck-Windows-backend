@@ -215,15 +215,6 @@ func (s *Session) SchemaEntries() *StringList {
 	return newStringList(nil)
 }
 
-func (s *Session) MenuEntries() *StringList {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if ime, ok := s.service.(*rime.IME); ok {
-		return newStringList(ime.MobileMenuEntries())
-	}
-	return newStringList(nil)
-}
-
 func (s *Session) CurrentSchemaID() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()

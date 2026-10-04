@@ -2359,43 +2359,6 @@ func (ime *IME) isKnownDynamicCommand(commandID int) bool {
 	return false
 }
 
-func switchMenuText(sw RimeSwitch, enabled bool) string {
-	switch len(sw.States) {
-	case 0:
-		return typeDuckMenuLabel(sw.Name)
-	case 1:
-		return typeDuckMenuLabel(sw.States[0])
-	default:
-		if enabled {
-			return fmt.Sprintf("%s → %s", typeDuckMenuLabel(sw.States[1]), typeDuckMenuLabel(sw.States[0]))
-		}
-		return fmt.Sprintf("%s → %s", typeDuckMenuLabel(sw.States[0]), typeDuckMenuLabel(sw.States[1]))
-	}
-}
-
-func typeDuckMenuLabel(label string) string {
-	switch strings.TrimSpace(label) {
-	case "简体":
-		return "簡體 / Simplified"
-	case "繁体":
-		return "繁體 / Traditional"
-	case "中英文切换":
-		return "中英文切換 / Chinese-English"
-	case "全半角切换":
-		return "全半角切換 / Full-Half Width"
-	case "中文标点":
-		return "中文標點 / Chinese Punctuation"
-	case "英文标点":
-		return "英文標點 / English Punctuation"
-	case "中文":
-		return "中文 / Chinese"
-	case "西文":
-		return "西文 / Western"
-	default:
-		return label
-	}
-}
-
 func (ime *IME) handleSwitchCommand(commandID int) bool {
 	if ime.backend == nil {
 		return false
@@ -2463,33 +2426,6 @@ func (ime *IME) handleSchemeSetCommand(commandID int, req *imecore.Request, resp
 	return false
 }
 
-func (ime *IME) schemaMenuItems() []map[string]interface{} {
-	if ime.backend == nil {
-		return nil
-	}
-	schemas := ime.backend.SchemaList()
-	if len(schemas) == 0 {
-		return nil
-	}
-	currentSchemaID := ime.backend.CurrentSchemaID()
-	items := make([]map[string]interface{}, 0, len(schemas))
-	for i, schema := range schemas {
-		text := strings.TrimSpace(schema.Name)
-		if text == "" {
-			text = schema.ID
-		}
-		if text == "" {
-			continue
-		}
-		items = append(items, map[string]interface{}{
-			"id":      schemaCommandID(i),
-			"text":    text,
-			"checked": schema.ID != "" && schema.ID == currentSchemaID,
-		})
-	}
-	return items
-}
-
 func (ime *IME) MobileSchemaEntries() []string {
 	ime.mu.Lock()
 	defer ime.mu.Unlock()
@@ -2516,13 +2452,6 @@ func (ime *IME) MobileSchemaEntries() []string {
 		entries = append(entries, schemaID+"\t"+name+"\t"+selected)
 	}
 	return entries
-}
-
-func (ime *IME) MobileMenuEntries() []string {
-	ime.mu.Lock()
-	defer ime.mu.Unlock()
-	ime.createSession(nil)
-	return flattenMobileMenuEntries("", ime.buildMenu())
 }
 
 func (ime *IME) MobileCurrentSchemaID() string {
@@ -2672,57 +2601,6 @@ func (ime *IME) selectSchemaByIDLocked(schemaID string) bool {
 		ime.syncSharedInputStateFromBackendIfChanged()
 	}
 	return true
-}
-
-func flattenMobileMenuEntries(group string, items []map[string]interface{}) []string {
-	entries := make([]string, 0, len(items))
-	for _, item := range items {
-		text := strings.TrimSpace(fmt.Sprint(item["text"]))
-		if text == "" {
-			continue
-		}
-		nextGroup := group
-		if nextGroup == "" {
-			nextGroup = text
-		} else {
-			nextGroup = nextGroup + "/" + text
-		}
-		if submenu, ok := item["submenu"].([]map[string]interface{}); ok {
-			entries = append(entries, flattenMobileMenuEntries(nextGroup, submenu)...)
-			continue
-		}
-		commandID := 0
-		if raw, ok := item["id"].(int); ok {
-			commandID = raw
-		}
-		checked, _ := item["checked"].(bool)
-		enabled := true
-		if raw, ok := item["enabled"].(bool); ok {
-			enabled = raw
-		}
-		entries = append(entries, strings.Join([]string{
-			sanitizeMobileMenuField(group),
-			fmt.Sprint(commandID),
-			sanitizeMobileMenuField(text),
-			boolString(checked),
-			boolString(enabled),
-		}, "\t"))
-	}
-	return entries
-}
-
-func sanitizeMobileMenuField(value string) string {
-	value = strings.ReplaceAll(value, "\t", " ")
-	value = strings.ReplaceAll(value, "\r", " ")
-	value = strings.ReplaceAll(value, "\n", " ")
-	return strings.TrimSpace(value)
-}
-
-func boolString(value bool) string {
-	if value {
-		return "1"
-	}
-	return "0"
 }
 
 func (ime *IME) updateLangStatus(req *imecore.Request, resp *imecore.Response) {
@@ -3097,59 +2975,6 @@ func (ime *IME) iconPath(name string) string {
 		return ""
 	}
 	return iconPath
-}
-
-func (ime *IME) buildMenu() []map[string]interface{} {
-	menuSwitches := ime.menuSwitches()
-	schemeSetItems := schemeSetMenuItems()
-	schemaItems := ime.schemaMenuItems()
-	items := make([]map[string]interface{}, 0, len(menuSwitches)+len(schemeSetItems)+10)
-	for i, sw := range menuSwitches {
-		enabled := ime.backend != nil && ime.backend.GetOption(sw.Name)
-		items = append(items, map[string]interface{}{
-			"id":      switchCommandID(i),
-			"text":    switchMenuText(sw, enabled),
-			"checked": enabled,
-		})
-	}
-	if len(menuSwitches) > 0 {
-		items = append(items, map[string]interface{}{"text": ""})
-	}
-	if len(schemeSetItems) > 0 {
-		items = append(items, map[string]interface{}{
-			"text":    "切換方案集 / Switch Scheme Set",
-			"submenu": schemeSetItems,
-		})
-	}
-	if len(schemaItems) > 0 {
-		items = append(items, map[string]interface{}{
-			"text":    "輸入方案(&I) / Input Schema",
-			"submenu": schemaItems,
-		})
-	}
-	if len(schemeSetItems) > 0 || len(schemaItems) > 0 {
-		items = append(items,
-			map[string]interface{}{"id": ID_OPEN_SUPER_ABBREV, "text": "開啟超級簡拼 / Open Super Abbrev"},
-			map[string]interface{}{"id": ID_DEPLOY, "text": "重新部署(&R) / Redeploy"},
-			map[string]interface{}{"text": ""},
-		)
-	}
-	items = append(items,
-		map[string]interface{}{"id": ID_SHARED_INPUT_STATE, "text": "輸入狀態共享 / Share Input State", "checked": ime.inputStateShared},
-		map[string]interface{}{"text": "輸入設定 / Input Settings", "submenu": []map[string]interface{}{
-			{"id": ID_INPUT_SEMICOLON_SELECT_SECOND, "text": "分號鍵次選 / Semicolon Selects Second", "checked": ime.semicolonSelectSecond},
-		}},
-		map[string]interface{}{"text": "開啟資料夾(&O) / Open Folder", "submenu": []map[string]interface{}{
-			{"id": ID_USER_DIR, "text": "使用者資料夾 / User Folder"},
-			{"id": ID_SHARED_DIR, "text": "共用資料夾 / Shared Folder"},
-			{"id": ID_SYNC_DIR, "text": "同步資料夾 / Sync Folder"},
-			{"id": ID_LOG_DIR, "text": "記錄資料夾 / Log Folder"},
-		}},
-		map[string]interface{}{"text": ""},
-		map[string]interface{}{"id": ID_HELP_DOCS, "text": "說明文件(&H) / Help"},
-		map[string]interface{}{"id": ID_DISCUSSIONS, "text": "參與討論(&J) / Discuss"},
-	)
-	return items
 }
 
 func (ime *IME) AIHotkeyDescription() string {

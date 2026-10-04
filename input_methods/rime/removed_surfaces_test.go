@@ -9,62 +9,6 @@ import (
 	"github.com/gaboolic/moqi-ime/imecore"
 )
 
-func TestTypeDuckV1MenuOmitsRemovedBackendSurfaces(t *testing.T) {
-	ime := newIsolatedTestIME(t)
-	items := flattenMenuItemsForRemovedSurfaceTest(ime.buildMenu())
-
-	bannedText := []string{
-		"下载方案集(&D)",
-		"更新配置(&P)",
-		"打开置顶短语",
-		"自动插入成对符号",
-		"打开成对符号设置",
-		"WebDAV 配置...",
-		"测试 WebDAV",
-		"启用云剪贴板",
-		"云剪贴板设置...",
-		"外觀(&A) / Appearance",
-		"切換主題 / Switch Theme",
-		"行內預編輯 / Inline Preedit",
-		"候選排列 / Candidate Layout",
-		"每行候選數 / Candidates per Row",
-		"候選間距 / Candidate Spacing",
-		"候選總數 / Candidate Count",
-		"字體大小 / Font Size",
-		"候選文字字體 / Candidate Font",
-		"註釋文字大小 / Comment Font Size",
-		"註釋文字字體 / Comment Font",
-		"候選框背景 / Candidate Background",
-		"高亮顏色 / Highlight Color",
-		"字體顏色 / Text Color",
-		"高亮文字顏色 / Highlight Text Color",
-		"匯入外觀 / Import Skin",
-	}
-	for _, text := range bannedText {
-		if _, ok := items.byText[text]; ok {
-			t.Fatalf("removed v1 menu surface %q is still visible", text)
-		}
-	}
-
-	bannedIDs := []int{
-		ID_DOWNLOAD_SCHEME_SET,
-		ID_UPDATE_CONFIG,
-		ID_OPEN_CUSTOM_PHRASE,
-		ID_INPUT_AUTO_PAIR_QUOTES,
-		ID_OPEN_AUTO_PAIR_SYMBOLS,
-		ID_WEBDAV_SETTINGS,
-		ID_CLOUD_CLIPBOARD_TEST,
-		ID_CLOUD_CLIPBOARD_ENABLED,
-		ID_CLOUD_CLIPBOARD_SETTINGS,
-	}
-	bannedIDs = append(bannedIDs, legacyAppearanceCommandIDsForRemovedSurfaceTest()...)
-	for _, id := range bannedIDs {
-		if _, ok := items.byID[id]; ok {
-			t.Fatalf("removed v1 menu command id %d is still visible", id)
-		}
-	}
-}
-
 func TestTypeDuckV1RemovedBackendCommandsAreUnhandled(t *testing.T) {
 	ime := newIsolatedTestIME(t)
 
@@ -245,32 +189,4 @@ func legacyAppearanceCommandIDsForRemovedSurfaceTest() []int {
 		ID_APPEARANCE_CAND_COUNT_9,
 		ID_APPEARANCE_IMPORT_SKIN,
 	}
-}
-
-type removedSurfaceMenuIndex struct {
-	byText map[string]struct{}
-	byID   map[int]struct{}
-}
-
-func flattenMenuItemsForRemovedSurfaceTest(items []map[string]interface{}) removedSurfaceMenuIndex {
-	index := removedSurfaceMenuIndex{
-		byText: map[string]struct{}{},
-		byID:   map[int]struct{}{},
-	}
-	var walk func([]map[string]interface{})
-	walk = func(entries []map[string]interface{}) {
-		for _, entry := range entries {
-			if text, ok := entry["text"].(string); ok {
-				index.byText[text] = struct{}{}
-			}
-			if id, ok := entry["id"].(int); ok {
-				index.byID[id] = struct{}{}
-			}
-			if submenu, ok := entry["submenu"].([]map[string]interface{}); ok {
-				walk(submenu)
-			}
-		}
-	}
-	walk(items)
-	return index
 }
