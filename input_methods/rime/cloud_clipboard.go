@@ -54,7 +54,12 @@ func (ime *IME) onCloudClipboardUpload(req *imecore.Request, resp *imecore.Respo
 	if req == nil || resp == nil {
 		return resp
 	}
-	text := strings.TrimSpace(req.CloudClipboardText)
+	text := ""
+	if req != nil && req.Data != nil {
+		if value, ok := req.Data["cloudClipboardText"].(string); ok {
+			text = strings.TrimSpace(value)
+		}
+	}
 	if text == "" {
 		resp.ReturnValue = 0
 		return resp

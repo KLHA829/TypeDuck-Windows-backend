@@ -174,3 +174,40 @@ func TestBuildProtoResponseIncludesCandidateCursorWhenPresent(t *testing.T) {
 		t.Fatalf("expected candidateCursor=2, got %#v", msg.CandidateCursor)
 	}
 }
+
+func TestParseProtoRequestMapsTypeDuckMethods(t *testing.T) {
+	cases := map[moqipb.Method]string{
+		moqipb.Method_METHOD_TYPEDUCK_SETTINGS_SNAPSHOT: "typeduckSettingsSnapshot",
+		moqipb.Method_METHOD_TYPEDUCK_RECONFIGURE:       "typeduckReconfigure",
+		moqipb.Method_METHOD_TYPEDUCK_HEALTH:            "typeduckHealth",
+	}
+	for method, want := range cases {
+		req := ParseProtoRequest(&moqipb.ClientRequest{Method: method, SeqNum: 1})
+		if req.Method != want {
+			t.Fatalf("method %v: got %q want %q", method, req.Method, want)
+		}
+	}
+}
+
+func TestBuildProtoResponseIncludesRichCandidateEntryFields(t *testing.T) {
+	resp := NewResponse(5, true)
+	resp.CandidateEntries = []CandidateEntry{
+		{
+			Text:             "好",
+			InputCode:        "hou",
+			Jyutping:         "hou2",
+			RawLookupComment: "\u000c\u000d1,好,hou2",
+		},
+	}
+	msg, err := BuildProtoResponse("client-1", resp)
+	if err != nil {
+		t.Fatalf("BuildProtoResponse failed: %v", err)
+	}
+	if len(msg.GetCandidateEntries()) != 1 {
+		t.Fatalf("expected one candidate entry, got %#v", msg.GetCandidateEntries())
+	}
+	entry := msg.GetCandidateEntries()[0]
+	if entry.GetRawLookupComment() == "" || entry.GetJyutping() != "hou2" || entry.GetInputCode() != "hou" {
+		t.Fatalf("unexpected rich candidate entry: %#v", entry)
+	}
+}
