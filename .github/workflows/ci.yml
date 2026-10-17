@@ -23,3 +23,6 @@ jobs:
         run: |
           go test ./agenttrust/ -count=1
           go test ./imecore/ -count=1
+          go test ./input_methods/moqi/ -count=1
+          go test ./input_methods/fcitx5/ -count=1
+          go test ./input_methods/rime/cloudclipboard/ -count=1

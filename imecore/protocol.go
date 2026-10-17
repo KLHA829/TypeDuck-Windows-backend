@@ -65,9 +65,10 @@ type Request struct {
 	CursorPos          int
 	SelStart           int
 	SelEnd             int
-	CloudClipboardText string
-	TypeDuckSettings   *TypeDuckSettingsUpdate
-	Data               map[string]interface{}
+	TypeDuckSettings        *TypeDuckSettingsUpdate
+	TypeDuckReconfigure     *TypeDuckReconfigureRequest
+	TypeDuckSettingsSnapshot *TypeDuckSettingsSnapshot
+	Data                    map[string]interface{}
 }
 
 type TypeDuckSettingsUpdate struct {
@@ -127,8 +128,72 @@ type PreservedKeyInfo struct {
 }
 
 type CandidateEntry struct {
-	Text    string
-	Comment string
+	Text               string
+	Comment            string
+	ID                 string
+	InputCode          string
+	Jyutping           string
+	RawLookupComment   string
+	Translations       []string
+	Prompts            []string
+	SourceIndex        *uint32
+	Selectable         *bool
+}
+
+type TypeDuckSettingsSnapshot struct {
+	Language            string
+	SchemaID            string
+	DisplayLanguage     string
+	AsciiMode           bool
+	TraditionalHongKong bool
+	CandidatePageSize   uint32
+	DisplayLanguages    []string
+	MainLanguage        string
+	PageSize            uint32
+	IsHeiTypeface       bool
+	ShowRomanization    string
+	EnableCompletion    bool
+	EnableCorrection    bool
+	EnableSentence      bool
+	EnableLearning      bool
+	ShowReverseCode     bool
+	IsCangjie5          bool
+	Source              string
+	StatusMessage       string
+}
+
+type TypeDuckReconfigureRequest struct {
+	SchemaID        string
+	ReloadUserDict  bool
+	RestartBackend  bool
+}
+
+type TypeDuckEngineCapability struct {
+	Name      string
+	Supported bool
+	Version   string
+	Detail    string
+}
+
+type TypeDuckEngineHealth struct {
+	Status       int32
+	BackendName  string
+	Message      string
+	Recoverable  bool
+	RestartCount uint32
+}
+
+type TypeDuckError struct {
+	Code        int32
+	Message     string
+	Recoverable bool
+	Detail      string
+}
+
+type TypeDuckProtocolInfo struct {
+	Version             uint32
+	Product             string
+	CompatibilityBridge string
 }
 
 type TypeDuckCandidatePage struct {
@@ -174,7 +239,13 @@ type Response struct {
 	OpenKeyboard          bool
 	AddPreservedKey       []PreservedKeyInfo
 	RemovePreservedKey    []string
-	TypeDuckCandidatePage *TypeDuckCandidatePage
+	TypeDuckCandidatePage    *TypeDuckCandidatePage
+	TypeDuckSettingsSnapshot *TypeDuckSettingsSnapshot
+	TypeDuckSettingsUpdate   *TypeDuckSettingsUpdate
+	TypeDuckProtocol         *TypeDuckProtocolInfo
+	TypeDuckCapabilities     []TypeDuckEngineCapability
+	TypeDuckEngineHealth     *TypeDuckEngineHealth
+	TypeDuckError            *TypeDuckError
 }
 
 func NewResponse(seqNum int, success bool) *Response {
@@ -249,9 +320,6 @@ func ParseProtoRequest(msg *moqipb.ClientRequest) *Request {
 	if msg.PageBackward != nil {
 		req.PageBackward = msg.GetPageBackward()
 	}
-	if text := msg.GetCloudClipboardText(); text != "" {
-		req.CloudClipboardText = text
-	}
 	if update := msg.GetTypeduckSettingsUpdate(); update != nil {
 		settings := TypeDuckSettingsUpdate{}
 		if update.PageSize != nil {
@@ -275,6 +343,16 @@ func ParseProtoRequest(msg *moqipb.ClientRequest) *Request {
 			settings.IsCangjie5 = update.GetIsCangjie5()
 		}
 		req.TypeDuckSettings = &settings
+	}
+	if reconfigure := msg.GetTypeduckReconfigureRequest(); reconfigure != nil {
+		req.TypeDuckReconfigure = &TypeDuckReconfigureRequest{
+			SchemaID:       reconfigure.GetSchemaId(),
+			ReloadUserDict: reconfigure.GetReloadUserDict(),
+			RestartBackend: reconfigure.GetRestartBackend(),
+		}
+	}
+	if snapshot := msg.GetTypeduckSettingsSnapshot(); snapshot != nil {
+		req.TypeDuckSettingsSnapshot = typeDuckSettingsSnapshotFromProto(snapshot)
 	}
 
 	return req
@@ -314,10 +392,7 @@ func BuildProtoResponse(clientID string, resp *Response) (*moqipb.ServerResponse
 		msg.CustomizeUi = ui
 	}
 	for _, candidate := range resp.CandidateEntries {
-		msg.CandidateEntries = append(msg.CandidateEntries, &moqipb.CandidateEntry{
-			Text:    candidate.Text,
-			Comment: candidate.Comment,
-		})
+		msg.CandidateEntries = append(msg.CandidateEntries, candidateEntryToProto(candidate))
 	}
 	if resp.TypeDuckCandidatePage != nil {
 		msg.TypeduckCandidatePage = &moqipb.TypeDuckCandidatePage{
@@ -339,6 +414,44 @@ func BuildProtoResponse(clientID string, resp *Response) (*moqipb.ServerResponse
 			Title:   resp.TrayNotification.Title,
 			Message: resp.TrayNotification.Message,
 			Icon:    trayNotificationIconToProto(resp.TrayNotification.Icon),
+		}
+	}
+	if resp.TypeDuckProtocol != nil {
+		msg.TypeduckProtocol = &moqipb.TypeDuckProtocolInfo{
+			Version:             resp.TypeDuckProtocol.Version,
+			Product:             resp.TypeDuckProtocol.Product,
+			CompatibilityBridge: resp.TypeDuckProtocol.CompatibilityBridge,
+		}
+	}
+	if resp.TypeDuckSettingsSnapshot != nil {
+		msg.TypeduckSettingsSnapshot = typeDuckSettingsSnapshotToProto(resp.TypeDuckSettingsSnapshot)
+	}
+	if resp.TypeDuckSettingsUpdate != nil {
+		msg.TypeduckSettingsUpdate = typeDuckSettingsUpdateToProto(resp.TypeDuckSettingsUpdate)
+	}
+	for _, capability := range resp.TypeDuckCapabilities {
+		msg.TypeduckCapabilities = append(msg.TypeduckCapabilities, &moqipb.TypeDuckEngineCapability{
+			Name:      capability.Name,
+			Supported: capability.Supported,
+			Version:   capability.Version,
+			Detail:    capability.Detail,
+		})
+	}
+	if resp.TypeDuckEngineHealth != nil {
+		msg.TypeduckEngineHealth = &moqipb.TypeDuckEngineHealth{
+			Status:       moqipb.TypeDuckHealthStatus(resp.TypeDuckEngineHealth.Status),
+			BackendName:  resp.TypeDuckEngineHealth.BackendName,
+			Message:      resp.TypeDuckEngineHealth.Message,
+			Recoverable:  resp.TypeDuckEngineHealth.Recoverable,
+			RestartCount: resp.TypeDuckEngineHealth.RestartCount,
+		}
+	}
+	if resp.TypeDuckError != nil {
+		msg.TypeduckError = &moqipb.TypeDuckError{
+			Code:        moqipb.TypeDuckErrorCode(resp.TypeDuckError.Code),
+			Message:     resp.TypeDuckError.Message,
+			Recoverable: resp.TypeDuckError.Recoverable,
+			Detail:      resp.TypeDuckError.Detail,
 		}
 	}
 	for _, btn := range resp.AddButton {
@@ -401,12 +514,16 @@ func methodFromProto(method moqipb.Method) string {
 		return "selectCandidate"
 	case moqipb.Method_METHOD_CHANGE_PAGE:
 		return "changePage"
-	case moqipb.Method_METHOD_CLOUD_CLIPBOARD_UPLOAD:
-		return "cloudClipboardUpload"
+	case moqipb.Method_METHOD_TYPEDUCK_SETTINGS_SNAPSHOT:
+		return "typeduckSettingsSnapshot"
 	case moqipb.Method_METHOD_TYPEDUCK_SETTINGS_UPDATE:
 		return "typeduckSettingsUpdate"
 	case moqipb.Method_METHOD_TYPEDUCK_DEPLOY:
 		return "typeduckDeploy"
+	case moqipb.Method_METHOD_TYPEDUCK_RECONFIGURE:
+		return "typeduckReconfigure"
+	case moqipb.Method_METHOD_TYPEDUCK_HEALTH:
+		return "typeduckHealth"
 	default:
 		return ""
 	}
@@ -450,12 +567,16 @@ func MethodToProto(method string) moqipb.Method {
 		return moqipb.Method_METHOD_SELECT_CANDIDATE
 	case "changePage":
 		return moqipb.Method_METHOD_CHANGE_PAGE
-	case "cloudClipboardUpload":
-		return moqipb.Method_METHOD_CLOUD_CLIPBOARD_UPLOAD
+	case "typeduckSettingsSnapshot":
+		return moqipb.Method_METHOD_TYPEDUCK_SETTINGS_SNAPSHOT
 	case "typeduckSettingsUpdate":
 		return moqipb.Method_METHOD_TYPEDUCK_SETTINGS_UPDATE
 	case "typeduckDeploy":
 		return moqipb.Method_METHOD_TYPEDUCK_DEPLOY
+	case "typeduckReconfigure":
+		return moqipb.Method_METHOD_TYPEDUCK_RECONFIGURE
+	case "typeduckHealth":
+		return moqipb.Method_METHOD_TYPEDUCK_HEALTH
 	default:
 		return moqipb.Method_METHOD_UNSPECIFIED
 	}
@@ -738,4 +859,110 @@ func int32Ptr(value int32) *int32 {
 
 func boolPtr(value bool) *bool {
 	return &value
+}
+
+func candidateEntryToProto(candidate CandidateEntry) *moqipb.CandidateEntry {
+	msg := &moqipb.CandidateEntry{
+		Text:             candidate.Text,
+		Comment:          candidate.Comment,
+		Id:               candidate.ID,
+		InputCode:        candidate.InputCode,
+		Jyutping:         candidate.Jyutping,
+		RawLookupComment: candidate.RawLookupComment,
+		Translations:     append([]string{}, candidate.Translations...),
+		Prompts:          append([]string{}, candidate.Prompts...),
+	}
+	if candidate.SourceIndex != nil {
+		msg.SourceIndex = candidate.SourceIndex
+	}
+	if candidate.Selectable != nil {
+		msg.Selectable = candidate.Selectable
+	}
+	return msg
+}
+
+func typeDuckSettingsSnapshotFromProto(snapshot *moqipb.TypeDuckSettingsSnapshot) *TypeDuckSettingsSnapshot {
+	if snapshot == nil {
+		return nil
+	}
+	return &TypeDuckSettingsSnapshot{
+		Language:            snapshot.GetLanguage(),
+		SchemaID:            snapshot.GetSchemaId(),
+		DisplayLanguage:     snapshot.GetDisplayLanguage(),
+		AsciiMode:           snapshot.GetAsciiMode(),
+		TraditionalHongKong: snapshot.GetTraditionalHongKong(),
+		CandidatePageSize:   snapshot.GetCandidatePageSize(),
+		DisplayLanguages:    append([]string{}, snapshot.GetDisplayLanguages()...),
+		MainLanguage:        snapshot.GetMainLanguage(),
+		PageSize:            snapshot.GetPageSize(),
+		IsHeiTypeface:       snapshot.GetIsHeiTypeface(),
+		ShowRomanization:    snapshot.GetShowRomanization(),
+		EnableCompletion:    snapshot.GetEnableCompletion(),
+		EnableCorrection:    snapshot.GetEnableCorrection(),
+		EnableSentence:      snapshot.GetEnableSentence(),
+		EnableLearning:      snapshot.GetEnableLearning(),
+		ShowReverseCode:     snapshot.GetShowReverseCode(),
+		IsCangjie5:          snapshot.GetIsCangjie5(),
+		Source:              snapshot.GetSource(),
+		StatusMessage:       snapshot.GetStatusMessage(),
+	}
+}
+
+func typeDuckSettingsSnapshotToProto(snapshot *TypeDuckSettingsSnapshot) *moqipb.TypeDuckSettingsSnapshot {
+	if snapshot == nil {
+		return nil
+	}
+	return &moqipb.TypeDuckSettingsSnapshot{
+		Language:            snapshot.Language,
+		SchemaId:            snapshot.SchemaID,
+		DisplayLanguage:     snapshot.DisplayLanguage,
+		AsciiMode:           snapshot.AsciiMode,
+		TraditionalHongKong: snapshot.TraditionalHongKong,
+		CandidatePageSize:   snapshot.CandidatePageSize,
+		DisplayLanguages:    append([]string{}, snapshot.DisplayLanguages...),
+		MainLanguage:        snapshot.MainLanguage,
+		PageSize:            snapshot.PageSize,
+		IsHeiTypeface:       snapshot.IsHeiTypeface,
+		ShowRomanization:    snapshot.ShowRomanization,
+		EnableCompletion:    snapshot.EnableCompletion,
+		EnableCorrection:    snapshot.EnableCorrection,
+		EnableSentence:      snapshot.EnableSentence,
+		EnableLearning:      snapshot.EnableLearning,
+		ShowReverseCode:     snapshot.ShowReverseCode,
+		IsCangjie5:          snapshot.IsCangjie5,
+		Source:              snapshot.Source,
+		StatusMessage:       snapshot.StatusMessage,
+	}
+}
+
+func typeDuckSettingsUpdateToProto(update *TypeDuckSettingsUpdate) *moqipb.TypeDuckSettingsUpdate {
+	if update == nil {
+		return nil
+	}
+	msg := &moqipb.TypeDuckSettingsUpdate{}
+	if update.PageSize != 0 {
+		pageSize := uint32(update.PageSize)
+		msg.PageSize = &pageSize
+	}
+	if update.EnableCompletion {
+		value := update.EnableCompletion
+		msg.EnableCompletion = &value
+	}
+	if update.EnableCorrection {
+		value := update.EnableCorrection
+		msg.EnableCorrection = &value
+	}
+	if update.EnableSentence {
+		value := update.EnableSentence
+		msg.EnableSentence = &value
+	}
+	if update.EnableLearning {
+		value := update.EnableLearning
+		msg.EnableLearning = &value
+	}
+	if update.IsCangjie5 {
+		value := update.IsCangjie5
+		msg.IsCangjie5 = &value
+	}
+	return msg
 }

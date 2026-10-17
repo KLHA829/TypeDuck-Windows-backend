@@ -411,6 +411,12 @@ func (ime *IME) HandleRequest(req *imecore.Request) *imecore.Response {
 			resp.ReturnValue = 0
 		}
 		return resp
+	case "typeduckSettingsSnapshot":
+		return ime.typeDuckSettingsSnapshot(req, resp)
+	case "typeduckHealth":
+		return ime.typeDuckHealth(req, resp)
+	case "typeduckReconfigure":
+		return ime.typeDuckReconfigure(req, resp)
 	case "typeduckDeploy":
 		if !ime.redeploy(req, resp) {
 			resp.Success = false
@@ -2186,7 +2192,7 @@ func (ime *IME) fillResponseFromBackendState(resp *imecore.Response, allowCommit
 	}
 	if len(state.Candidates) > 0 {
 		resp.CandidateList = ime.formatCandidates(state.Candidates)
-		resp.CandidateEntries = ime.candidateEntries(state.Candidates)
+		resp.CandidateEntries = ime.candidateEntries(state.Candidates, state.RawInput)
 		if state.CandidateCursor < 0 {
 			resp.CandidateCursor = 0
 		} else if state.CandidateCursor >= len(state.Candidates) {
@@ -2955,13 +2961,10 @@ func filterDuplicateCandidatesByText(candidates []candidateItem, existing []cand
 	return filtered
 }
 
-func (ime *IME) candidateEntries(candidates []candidateItem) []imecore.CandidateEntry {
+func (ime *IME) candidateEntries(candidates []candidateItem, inputCode string) []imecore.CandidateEntry {
 	entries := make([]imecore.CandidateEntry, 0, len(candidates))
 	for _, candidate := range candidates {
-		entries = append(entries, imecore.CandidateEntry{
-			Text:    candidate.Text,
-			Comment: candidate.Comment,
-		})
+		entries = append(entries, candidateEntryFromItem(candidate, inputCode))
 	}
 	return entries
 }

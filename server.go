@@ -241,11 +241,20 @@ func (s *Server) handleRequest(clientID string, req *imecore.Request) *imecore.R
 		}
 		return &imecore.Response{SeqNum: req.SeqNum, Success: true}
 
+	case "typeduckSettingsSnapshot":
+		return rime.TypeDuckSettingsSnapshotFromLauncher(req, clientID)
+
 	case "typeduckSettingsUpdate":
 		return rime.ApplyTypeDuckSettingsFromLauncher(req, clientID)
 
 	case "typeduckDeploy":
 		return rime.DeployTypeDuckFromLauncher(req)
+
+	case "typeduckReconfigure":
+		return rime.TypeDuckReconfigureFromLauncher(req, clientID)
+
+	case "typeduckHealth":
+		return rime.TypeDuckHealthFromLauncher(req)
 
 	case "onActivate", "onDeactivate", "filterKeyDown", "onKeyDown",
 		"filterKeyUp", "onKeyUp", "onCommand", "onMenu", "onCompositionTerminated",
